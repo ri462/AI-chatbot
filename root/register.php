@@ -12,6 +12,7 @@ $datas = [
     'password'  => '',
     'confirm_password'  => ''
 ];
+$errors = [];
 
 //GET通信だった場合はセッション変数にトークンを追加
 if($_SERVER['REQUEST_METHOD'] != 'POST'){
@@ -34,12 +35,13 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     //データベースの中に同一ユーザー名が存在していないか確認
     if(empty($errors['name'])){
-        $sql = "SELECT id FROM users WHERE name = :name";
+    $sql = "SELECT id FROM users WHERE name = :name";
         $stmt = $pdo->prepare($sql);
-        $stmt->bindValue('name',$datas['name'],PDO::PARAM_INT);
+    // ユーザー名は文字列のため PARAM_STR を使用
+    $stmt->bindValue('name', $datas['name'], PDO::PARAM_STR);
         $stmt->execute();
         if($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-            $errors['name'] = 'This username is already taken.';
+            $errors['name'] = 'この名前は既に使用されています';
         }
     }
     //エラーがなかったらDBへの新規登録を実行
@@ -81,49 +83,54 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 ?>
  
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Sign Up</title>
-    <!-- bootstrap読み込み -->
+    <title>ChatBot | アカウント作成</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body{
-            font: 14px sans-serif;
-        }
-        .wrapper{
-            width: 400px;
-            padding: 20px;
-            margin: 0 auto;
-        }
-    </style>
+    <link rel="stylesheet" href="css/register.css">
 </head>
 <body>
-    <div class="wrapper">
-        <h2>Sign Up</h2>
-        <p>Please fill this form to create an account.</p>
-        <form action="<?php echo $_SERVER ['SCRIPT_NAME']; ?>" method="post">
+    <div class="container-narrow">
+        <div class="title">ChatBot</div>
+        <div class="subtitle">アカウントの作成</div>
+        <div class="note">このアプリに登録するには<br>ユーザーネームとパスワードを入力してください</div>
+
+        <form id="registerForm" action="<?php echo $_SERVER ['SCRIPT_NAME']; ?>" method="post" novalidate>
+            <input type="hidden" name="token" value="<?php echo h($_SESSION['token']); ?>">
+            <!-- 確認用パスワードは非表示。送信時にパスワードと同値を入れる -->
+            <input type="hidden" name="confirm_password" id="confirm_password_hidden" value="">
+
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="name" class="form-control <?php echo (!empty(h($errors['name']))) ? 'is-invalid' : ''; ?>" value="<?php echo h($datas['name']); ?>">
-                <span class="invalid-feedback"><?php echo h($errors['name']); ?></span>
-            </div>    
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" class="form-control <?php echo (!empty(h($errors['password']))) ? 'is-invalid' : ''; ?>" value="<?php echo h($datas['password']); ?>">
-                <span class="invalid-feedback"><?php echo h($errors['password']); ?></span>
+                <input type="text" name="name" class="form-control input-style <?php echo (!empty($errors['name'])) ? 'is-invalid' : ''; ?>" placeholder="username" value="<?php echo h($datas['name']); ?>">
+                <?php if(!empty($errors['name'])): ?><div class="error"><?php echo h($errors['name']); ?></div><?php endif; ?>
             </div>
             <div class="form-group">
-                <label>Confirm Password</label>
-                <input type="password" name="confirm_password" class="form-control <?php echo (!empty(h($errors['confirm_password']))) ? 'is-invalid' : ''; ?>" value="<?php echo h($datas['confirm_password']); ?>">
-                <span class="invalid-feedback"><?php echo h($errors['confirm_password']); ?></span>
+                <input type="password" name="password" id="password_input" class="form-control input-style <?php echo (!empty($errors['password'])) ? 'is-invalid' : ''; ?>" placeholder="password" value="">
+                <?php if(!empty($errors['password'])): ?><div class="error"><?php echo h($errors['password']); ?></div><?php endif; ?>
+                <?php if(!empty($errors['confirm_password'])): ?><div class="error"><?php echo h($errors['confirm_password']); ?></div><?php endif; ?>
             </div>
-            <div class="form-group">
-                <input type="hidden" name="token" value="<?php echo h($_SESSION['token']); ?>">
-                <input type="submit" class="btn btn-primary" value="Submit">
-            </div>
-            <p>Already have an account? <a href="login.php">Login here</a>.</p>
+
+            <button type="submit" class="btn btn-black w-100">新規登録</button>
+            <div class="space-8"></div>
+            <a class="btn btn-black w-100" href="login.php">ログインはこちらへ</a>
+            <div class="space-8"></div>
+            <a class="btn btn-black w-100" href="http://localhost:3000/?guest=1">登録せずに利用</a>
         </form>
-    </div>    
+    </div>
+
+        <script>
+            // 送信直前に confirm_password を password と同じに設定（純粋なJS）
+            var form = document.getElementById('registerForm');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    var pwInput = document.getElementById('password_input');
+                    var hidden = document.getElementById('confirm_password_hidden');
+                    var pw = pwInput && 'value' in pwInput ? pwInput.value : '';
+                    if (hidden && 'value' in hidden) hidden.value = pw;
+                });
+            }
+        </script>
 </body>
 </html>

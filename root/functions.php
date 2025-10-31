@@ -34,7 +34,7 @@ function validation($datas,$confirm = true)
     if(empty($datas["password"])){
         $errors['password']  = "Please enter a password.";
     }else if(!preg_match('/\A[a-z\d]{8,100}+\z/i',$datas["password"])){
-        $errors['password'] = "Please set a password with at least 8 characters.";
+        $errors['password'] = "最低8文字以上入力してください";
     }
     //パスワード入力確認チェック（ユーザー新規登録時のみ使用）
     if($confirm){
