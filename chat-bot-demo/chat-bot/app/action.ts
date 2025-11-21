@@ -6,7 +6,7 @@ const client = new OpenAI({
   apiKey: "ollama",
   baseURL: process.env.API_BASE_OLLAMA_URL,
 });
-export async function aiResponse(messages: ChatCompletionMessageParam[]
+export async function aiResponse(messages: ChatCompletionMessageParam[], tail: string
 ): Promise<string | null> {
   if (!messages || messages.length === 0){
     return null;
@@ -19,5 +19,5 @@ export async function aiResponse(messages: ChatCompletionMessageParam[]
 
   const content = chatCompletion.choices[0].message.content|| "";
   //return chatCompletion.choices[0].message.content;
-  return content.trim().slice(0,100) + "よっし！";
+  return content.trim() + tail;
 }
