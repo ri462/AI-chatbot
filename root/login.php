@@ -130,6 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             <input type="hidden" name="token" value="<?php echo h($_SESSION['token'] ?? ''); ?>">
             <input type="hidden" name="next" value="<?php echo h($next_value); ?>">
             <button type="submit" class="btn btn-black w-100">ログイン</button>
+            <div class="mt-2">
+                <a href="http://localhost/AI-chatbot/root/register.php" class="btn btn-outline w-100">新規登録はこちら</a>
+            </div>
         </form>
     </div>
 </body>
