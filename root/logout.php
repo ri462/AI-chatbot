@@ -24,6 +24,8 @@ session_destroy();
 // Next側の認証フラグCookieをクリア
 setcookie('chat_auth', '', 0, '/');
 
-//ログインページへリダイレクト
-header("location: login.php");
+// ログインページへリダイレクト
+// login.php は起動時に DB 接続を行うため、ログアウト直後は静的な login.html へ遷移させる
+// （ユーザーが再度ログインを試みる場合にのみ DB にアクセスさせる）
+header("location: login.html");
 exit;
