@@ -1,7 +1,7 @@
 "use client";
 import type { IChatMessage } from "@/type";
 import Image from "next/image";
-import aiIcon from './ai.svg';
+import aiIcon from '../public/ai.png';
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from "remark-gfm";
@@ -95,8 +95,16 @@ const ChatMessage = ({ chatMessage }: IProps) => {
         <div className="rounded-sm bg-gray-300/30 p-1 mr-3 dark:bg-gray-700/30 dark:text-gray-200">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {chatMessage.content}
-      </ReactMarkdown>
-      </div>
+          </ReactMarkdown>
+
+          {chatMessage.image && (
+            <img
+              src={chatMessage.image}
+              alt="uploaded"
+              className="mt-2 rounded-md max-w-[200px] border"
+            />
+          )}
+        </div>
       ) : (
         
         <>
@@ -113,6 +121,14 @@ const ChatMessage = ({ chatMessage }: IProps) => {
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {chatMessage.content}
             </ReactMarkdown>
+
+            {chatMessage.image && (
+              <img
+                src={chatMessage.image}
+                alt="ai uploaded"
+                className="mt-2 rounded-md max-w-[200px] border"
+              />
+            )}
           </div>
         </div>
         <div className="flex gap-2 mt-2">
