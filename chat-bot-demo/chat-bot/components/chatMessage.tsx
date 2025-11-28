@@ -71,19 +71,25 @@ const CopyButton = ({ translate, handleOnClick }: { translate: string, handleOnC
 
 interface IProps {
   chatMessage: IChatMessage;
+  // index of message in current thread (optional)
+  index?: number;
+  onLike?: (index: number) => void;
+  onDislike?: (index: number) => void;
 }
-const ChatMessage = ({ chatMessage }: IProps) => {
+const ChatMessage = ({ chatMessage, index = 0, onLike, onDislike }: IProps) => {
   const [likeClicked, setLikeClicked] = useState<boolean>(false);
   const [dislikeClicked, setDislikeClicked] = useState<boolean>(false);
 
   const handleLikeClick = () => {
     setLikeClicked(true);
     setDislikeClicked(false);
+    if (typeof onLike === "function") onLike(index);
   };
 
   const handleDislikeClick = () => {
     setDislikeClicked(true);
     setLikeClicked(false);
+    if (typeof onDislike === "function") onDislike(index);
   };
   const handleCopyClick = () => {
     navigator.clipboard.writeText(chatMessage.content);

@@ -2,8 +2,10 @@ import type { IChatMessage } from "@/type";
 import ChatMessage from "./chatMessage";
 interface IProps{
   chatMessages: IChatMessage[];
+  onLike?: (index: number) => void;
+  onDislike?: (index: number) => void;
 }
-const ChatMessageArea = ({ chatMessages }: IProps) => {
+const ChatMessageArea = ({ chatMessages, onLike, onDislike }: IProps) => {
   return (
     <div className="flex flex-col gap-2 w-screen overflow-auto">
       {chatMessages.map((chatMessage, index) => (
@@ -13,8 +15,7 @@ const ChatMessageArea = ({ chatMessages }: IProps) => {
             chatMessage.role === "assistant" && "justify-start"
           } flex w-full p-3`}
         >
-          <ChatMessage chatMessage={chatMessage} />
-          
+          <ChatMessage chatMessage={chatMessage} index={index} onLike={onLike} onDislike={onDislike} />
         </div>
       ))}
     </div>
