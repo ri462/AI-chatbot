@@ -31,8 +31,23 @@ const Header = ({ language, setLanguage }: HeaderProps) => {
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
 
-  const handleLogout = () => {
-    window.location.href = "http://localhost/AI-chatbot/root/logout.php";
+  const handleLogout = async () => {
+    try {
+      // ログアウト処理をAPIで叩いてから、確実にログインページへ遷移
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      await fetch("http://localhost/AI-chatbot/root/logout.php", {
+        method: "GET",
+        credentials: "include",
+        signal: controller.signal,
+      }).catch(() => {});
+      clearTimeout(timeout);
+    } catch (e) {
+      // ignore
+    }
+    // 最終的にログイン画面へ遷移（PHP側 logout.php でもリダイレクトしているが、
+    // フロント側から直接遷移させることで確実に画面を切り替える）
+    window.location.href = "http://localhost/AI-chatbot/root/login.php";
   };
 
   return (
