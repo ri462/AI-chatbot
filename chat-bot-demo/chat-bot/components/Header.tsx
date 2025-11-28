@@ -31,23 +31,18 @@ const Header = ({ language, setLanguage }: HeaderProps) => {
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    // 直接 logout.php にナビゲートしてセッションCookieを送信させ、
+    // サーバ側で破棄 → リダイレクト（login.php）する流れにします。
+    // fetch 等で非同期に叩くとレスポンス待ちやCORS/credentials周りで遷移が遅くなるため、
+    // ブラウザの通常遷移で確実に処理させます。
     try {
-      // ログアウト処理をAPIで叩いてから、確実にログインページへ遷移
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-      await fetch("http://localhost/AI-chatbot/root/logout.php", {
-        method: "GET",
-        credentials: "include",
-        signal: controller.signal,
-      }).catch(() => {});
-      clearTimeout(timeout);
+      const logoutUrl = `${location.protocol}//${location.hostname}/AI-chatbot/root/logout.php`;
+      window.location.href = logoutUrl;
     } catch (e) {
-      // ignore
+      // フォールバック: 絶対パスを直接指定
+      window.location.href = "http://localhost/AI-chatbot/root/logout.php";
     }
-    // 最終的にログイン画面へ遷移（PHP側 logout.php でもリダイレクトしているが、
-    // フロント側から直接遷移させることで確実に画面を切り替える）
-    window.location.href = "http://localhost/AI-chatbot/root/login.php";
   };
 
   return (
