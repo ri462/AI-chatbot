@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useTailStore } from "@/tailStore";
 
-const TAIL_LIST = ["よっし！", "にゃん！", "だぞ！", "です！", "なり！", "なし"];
+const TAIL_LIST = ["ワン", "ニャー", "カー", "ウホウホ", "うっきー", "パオーン"];
 
 interface HeaderProps {
   language: "ja" | "en" | "vi";
