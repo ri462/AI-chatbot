@@ -142,7 +142,8 @@ export default function Home() {
 
     const userMessage: IChatMessage = {
       role: "user",
-      content: content + (tail ? tail : ""),
+      // Do NOT append the `tail` to user messages — apply tails only to AI responses
+      content: content,
     };
 
     setChatMessages((prev) => [...prev, userMessage]);

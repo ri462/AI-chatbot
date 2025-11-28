@@ -72,7 +72,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $pdo->commit();
-            header("location: login.php");
+            // After successful registration, show a confirmation page first,
+            // then redirect to login. Pass the newly registered username for display.
+            $safeName = rawurlencode($datas['name']);
+            header("Location: register_confirm.php?name={$safeName}");
             exit;
         } catch (PDOException $e) {
             echo 'ERROR: Could not register.';
