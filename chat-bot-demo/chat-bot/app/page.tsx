@@ -24,6 +24,10 @@ export default function Home() {
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [language, setLanguage] = useState<"ja" | "en" | "vi">("ja");
   const [randomGreeting, setRandomGreeting] = useState(GREETING_MESSAGES[0]);
+  // thread-based chats
+  type Thread = { id: string; title: string; messages: IChatMessage[]; createdAt: string; origin?: "like" | "dislike" | "manual" };
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -59,6 +63,18 @@ export default function Home() {
     if (isGuest) return;
     const loadHistory = async () => {
       try {
+        // try loading saved threads from localStorage first
+        const s = typeof window !== "undefined" ? localStorage.getItem("chat_threads") : null;
+        if (s) {
+          const parsed: Thread[] = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setThreads(parsed);
+            setCurrentThreadId(parsed[0].id);
+            setChatMessages(parsed[0].messages);
+            return;
+          }
+        }
+
         const resp = await fetch("http://localhost/AI-chatbot/root/chat_history.php?limit=50", {
           method: "GET",
           credentials: "include",
@@ -71,17 +87,12 @@ export default function Home() {
             role: it.role === "assistant" ? "assistant" : "user",
             content: String(it.content ?? ""),
           }));
+          // create a default thread
+          const tid = String(Date.now());
+          const thread: Thread = { id: tid, title: "デフォルト", messages: restored, createdAt: new Date().toISOString() };
+          setThreads([thread]);
+          setCurrentThreadId(tid);
           setChatMessages(restored);
-
-          const grouped: Array<{ id: number; preview: string; date: string }> = [];
-          for (let i = 0; i < data.items.length; i++) {
-            const item = data.items[i];
-            if (item.role === "user") {
-              const preview = String(item.content).substring(0, 30) + (String(item.content).length > 30 ? "..." : "");
-              grouped.push({ id: i, preview, date: item.created_at || "" });
-            }
-          }
-          setHistoryList(grouped);
         }
       } catch (e) {
         console.error("履歴読み込みに失敗:", e);
@@ -93,12 +104,24 @@ export default function Home() {
   const saveMessage = async (msg: IChatMessage) => {
     if (isGuest) return;
     try {
-      await fetch("http://localhost/AI-chatbot/root/chat_history.php", {
+      // post to server for existing behaviour (fire-and-forget)
+      fetch("http://localhost/AI-chatbot/root/chat_history.php", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(msg),
-      });
+      }).catch(() => {});
+
+      // persist to current thread and localStorage
+      if (currentThreadId) {
+        setThreads((prev) => {
+          const next = prev.map((t) => (t.id === currentThreadId ? { ...t, messages: [...t.messages, msg] } : t));
+          try {
+            localStorage.setItem("chat_threads", JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+      }
     } catch (e) {
       console.error("履歴保存に失敗:", e);
     }
@@ -135,7 +158,9 @@ export default function Home() {
           : "Bạn chỉ được trả lời bằng Tiếng Việt. Không được dùng tiếng Nhật hay tiếng Anh.",
     };
 
-    const messagesToSend = [systemMessage, ...chatMessages, userMessage];
+    // build messages from current thread (so context is per-thread)
+    const currentThread = threads.find((t) => t.id === currentThreadId);
+    const messagesToSend = [systemMessage, ...(currentThread ? currentThread.messages : chatMessages), userMessage];
 
     try {
       let aiText = await aiResponse(messagesToSend, tail || "");
@@ -179,24 +204,106 @@ export default function Home() {
             }}
           >
             <div className="p-4">
-              <h3 className="text-lg font-bold mb-4">チャット履歴</h3>
-              {historyList.length === 0 ? (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold mb-4">チャット履歴</h3>
+                <button
+                  onClick={() => {
+                    // create new empty thread
+                    const tid = String(Date.now());
+                    const newThread = { id: tid, title: "新規チャット", messages: [], createdAt: new Date().toISOString(), origin: "manual" } as Thread;
+                    setThreads((prev) => {
+                      const next = [newThread, ...prev];
+                      try {
+                        localStorage.setItem("chat_threads", JSON.stringify(next));
+                      } catch {}
+                      return next;
+                    });
+                    setCurrentThreadId(tid);
+                    setChatMessages([]);
+                  }}
+                  className="px-2 py-1 bg-green-500 text-white rounded-md text-sm"
+                >
+                  新しいチャット
+                </button>
+              </div>
+
+              {threads.length === 0 ? (
                 <p className="text-sm text-gray-500">履歴がありません</p>
               ) : (
                 <div className="space-y-2">
-                  {historyList.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setIsHistoryOpen(false);
-                      }}
-                      className="w-full text-left p-3 border rounded hover:bg-gray-100 transition"
-                      style={{ borderColor: "var(--foreground)" }}
-                    >
-                      <p className="font-semibold text-sm truncate">{item.preview}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(item.date).toLocaleString("ja-JP")}</p>
-                    </button>
-                  ))}
+                  {/* 👍 category */}
+                  <div className="mb-2">
+                    <p className="text-sm font-semibold">👍 ボタン</p>
+                    {threads.filter((t) => t.origin === "like").length === 0 ? (
+                      <p className="text-xs text-gray-500">該当なし</p>
+                    ) : (
+                      threads
+                        .filter((t) => t.origin === "like")
+                        .map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              setCurrentThreadId(t.id);
+                              setChatMessages(t.messages);
+                              setIsHistoryOpen(false);
+                            }}
+                            className={`w-full text-left p-3 border rounded hover:bg-gray-100 transition ${currentThreadId === t.id ? "bg-blue-50" : ""}`}
+                            style={{ borderColor: "var(--foreground)" }}
+                          >
+                            <p className="font-semibold text-sm truncate">{t.title || t.messages.slice(-1)[0]?.content?.substring(0, 30) || "(無題)"}</p>
+                            <p className="text-xs text-gray-500 mt-1">{new Date(t.createdAt).toLocaleString("ja-JP")}</p>
+                          </button>
+                        ))
+                    )}
+                  </div>
+
+                  {/* 👎 category */}
+                  <div className="mb-2">
+                    <p className="text-sm font-semibold">👎 ボタン</p>
+                    {threads.filter((t) => t.origin === "dislike").length === 0 ? (
+                      <p className="text-xs text-gray-500">該当なし</p>
+                    ) : (
+                      threads
+                        .filter((t) => t.origin === "dislike")
+                        .map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              setCurrentThreadId(t.id);
+                              setChatMessages(t.messages);
+                              setIsHistoryOpen(false);
+                            }}
+                            className={`w-full text-left p-3 border rounded hover:bg-gray-100 transition ${currentThreadId === t.id ? "bg-blue-50" : ""}`}
+                            style={{ borderColor: "var(--foreground)" }}
+                          >
+                            <p className="font-semibold text-sm truncate">{t.title || t.messages.slice(-1)[0]?.content?.substring(0, 30) || "(無題)"}</p>
+                            <p className="text-xs text-gray-500 mt-1">{new Date(t.createdAt).toLocaleString("ja-JP")}</p>
+                          </button>
+                        ))
+                    )}
+                  </div>
+
+                  {/* その他 */}
+                  <div>
+                    <p className="text-sm font-semibold">その他</p>
+                    {threads
+                      .filter((t) => !t.origin || (t.origin !== "like" && t.origin !== "dislike"))
+                      .map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setCurrentThreadId(t.id);
+                            setChatMessages(t.messages);
+                            setIsHistoryOpen(false);
+                          }}
+                          className={`w-full text-left p-3 border rounded hover:bg-gray-100 transition ${currentThreadId === t.id ? "bg-blue-50" : ""}`}
+                          style={{ borderColor: "var(--foreground)" }}
+                        >
+                          <p className="font-semibold text-sm truncate">{t.title || t.messages.slice(-1)[0]?.content?.substring(0, 30) || "(無題)"}</p>
+                          <p className="text-xs text-gray-500 mt-1">{new Date(t.createdAt).toLocaleString("ja-JP")}</p>
+                        </button>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -215,7 +322,41 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <ChatMessageArea chatMessages={chatMessages} />
+              <ChatMessageArea
+                chatMessages={chatMessages}
+                onLike={(index) => {
+                  // create a new thread from messages up to clicked index
+                  const current = chatMessages.slice(0, index + 1);
+                  const tid = String(Date.now());
+                  const newThread = { id: tid, title: "分岐チャット", messages: current, createdAt: new Date().toISOString(), origin: "like" } as Thread;
+                  setThreads((prev) => {
+                    const next = [newThread, ...prev];
+                    try {
+                      localStorage.setItem("chat_threads", JSON.stringify(next));
+                    } catch {}
+                    return next;
+                  });
+                  setCurrentThreadId(tid);
+                  setChatMessages(current);
+                  setIsHistoryOpen(false);
+                }}
+                onDislike={(index) => {
+                  // similar behavior for dislike
+                  const current = chatMessages.slice(0, index + 1);
+                  const tid = String(Date.now());
+                  const newThread = { id: tid, title: "分岐チャット(否定)", messages: current, createdAt: new Date().toISOString(), origin: "dislike" } as Thread;
+                  setThreads((prev) => {
+                    const next = [newThread, ...prev];
+                    try {
+                      localStorage.setItem("chat_threads", JSON.stringify(next));
+                    } catch {}
+                    return next;
+                  });
+                  setCurrentThreadId(tid);
+                  setChatMessages(current);
+                  setIsHistoryOpen(false);
+                }}
+              />
               {isLoading && (
                 <div className="flex gap-3 ml-8 items-center my-3">
                   <p className="animate-pulse items-center justify-center">お待ちください...</p>

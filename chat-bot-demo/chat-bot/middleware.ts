@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
 
+  // 開発時は外部PHPの検証呼び出しでハングすることがあるため、
+  // ローカル開発中はミドルウェアをスキップしてページ表示を優先する。
+  // 本番では必ず認証チェックを有効にするため、NODE_ENVで制御する。
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next()
+  }
+
   // 静的アセットなどはスキップ
   const publicPrefixes = ['/_next', '/favicon.ico', '/public']
   if (publicPrefixes.some((p) => url.pathname.startsWith(p))) {
