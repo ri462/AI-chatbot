@@ -7,7 +7,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from "remark-gfm";
 
 interface IProps1 {
-  translate: string, isClicked : boolean, handleOnClick : () => void, disabled : boolean
+  translate: string, 
+  isClicked : boolean, 
+  handleOnClick : () => void, 
+  disabled : boolean
 }
 const LikeButton = ({translate, isClicked, handleOnClick, disabled } : IProps1) => {
   const buttonClassName = isClicked
@@ -68,6 +71,43 @@ const CopyButton = ({ translate, handleOnClick }: { translate: string, handleOnC
   );
 };
 
+const SpeakButton = ({ translate, text, language }: { translate: string; text: string; language: "ja" | "en" | "vi" }) => {
+  const [speaking, setSpeaking] = useState(false);
+
+  const handleSpeak = () => {
+    if (!("speechSynthesis" in window)) {
+      alert("このブラウザは音声読み上げに対応していません");
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    // utterance.lang = "ja-JP"; // 必要に応じて言語切替可能
+    switch (language) {
+      case "ja":
+        utterance.lang = "ja-JP";
+        break;
+      case "en":
+        utterance.lang = "en-US";
+        break;
+      case "vi":
+        utterance.lang = "vi-VN";
+        break;
+    }
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+  return (
+    <div className="relative group">
+      <button className="rounded-md border bg-white p-1 hover:bg-blue-200" onClick={handleSpeak}>
+        🔊
+      </button>
+      <div className="absolute top-1 left-1 -translate-x-1/2 -translate-y-full mt-1 px-2 py-1 bg-gray-500 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {speaking ? "読み上げ中..." : translate}
+      </div>
+    </div>
+  );
+};
+
 
 interface IProps {
   chatMessage: IChatMessage;
@@ -75,6 +115,7 @@ interface IProps {
   index?: number;
   onLike?: (index: number) => void;
   onDislike?: (index: number) => void;
+  language: "ja" | "en" | "vi";
 }
 const ChatMessage = ({ chatMessage, index = 0, onLike, onDislike }: IProps) => {
   const [likeClicked, setLikeClicked] = useState<boolean>(false);
@@ -154,6 +195,9 @@ const ChatMessage = ({ chatMessage, index = 0, onLike, onDislike }: IProps) => {
             translate="コピー"
             handleOnClick={handleCopyClick} 
           />
+          <SpeakButton 
+            translate="読み上げ" 
+            text={chatMessage.content} />
         </div>
         </>
       )}
