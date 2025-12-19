@@ -8,6 +8,14 @@ import ChatMessageArea from "@/components/chatMessageArea";
 
 const TAIL_LIST = ["ワン", "ニャー", "カー", "ウホウホ", "うっきー", "パオーン"];
 
+const GREETING_MESSAGES = [
+  { greeting: "こんにちは！", message: "何でも聞いてください!!!" },
+  { greeting: "やっほー！", message: "どんな質問でもOKです！" },
+  { greeting: "いらっしゃいませ！", message: "ご質問をどうぞ〜" },
+  { greeting: "ハロー！", message: "気軽に話しかけてください！" },
+  { greeting: "おかえりなさい！", message: "今日はどんなお話しましょうか？" },
+];
+
 interface HeaderProps {
   language: "ja" | "en" | "vi";
   setLanguage: React.Dispatch<React.SetStateAction<"ja" | "en" | "vi">>;
@@ -167,6 +175,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
+  const [randomGreeting, setRandomGreeting] = useState(GREETING_MESSAGES[0]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -174,6 +183,10 @@ export default function Home() {
   const { tail } = useTailStore();
 
   const toggleHistory = () => setIsHistoryOpen((p) => !p);
+
+  useEffect(() => {
+    setRandomGreeting(GREETING_MESSAGES[Math.floor(Math.random() * GREETING_MESSAGES.length)]);
+  }, []);
 
   useEffect(() => {
     // 判定: ゲスト or クッキー
@@ -436,7 +449,14 @@ export default function Home() {
 
       {/* メッセージ表示領域 */}
       <div ref={chatContainerRef} className="flex-grow overflow-y-auto pb-24">
-        {chatMessages.length === 0 ? null : (
+        {chatMessages.length === 0 ? (
+          <div className="bg-gray-200/80 m-12 round-2xl flex items-center justify-center p-10 text-3xl">
+            <div className="flex flex-col items-center gap-2">
+              <p>{randomGreeting.greeting}</p>
+              <p>{randomGreeting.message}</p>
+            </div>
+          </div>
+        ) : (
           <>
             <ChatMessageArea
               chatMessages={chatMessages}
