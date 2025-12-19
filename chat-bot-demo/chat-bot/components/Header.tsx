@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useTailStore } from "@/tailStore";
 
-const TAIL_LIST = ["ワン", "ニャー", "カー", "ウホウホ", "うっきー", "パオーン"];
+const TAIL_LIST = ["😊", "😢", "👍", "😋", "👋", "♥"];
 
 interface HeaderProps {
   language: "ja" | "en" | "vi";
