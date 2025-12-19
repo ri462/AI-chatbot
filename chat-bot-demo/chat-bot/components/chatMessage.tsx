@@ -139,14 +139,20 @@ const ChatMessage = ({
               icon="👍"
               translate="いいね"
               isActive={reaction === "like"}
-              onClick={() => { toggleReaction("like"); if (typeof index === "number") onLike?.(index); } )
+              onClick={() => {
+                toggleReaction("like");
+                if (typeof index === "number") onLike?.(index);
+              }}
             />
 
             <IconButton
               icon="👎"
               translate="よくない"
               isActive={reaction === "dislike"}
-              onClick={() => { toggleReaction("dislike"); if (typeof index === "number") onDislike?.(index); } )
+              onClick={() => {
+                toggleReaction("dislike");
+                if (typeof index === "number") onDislike?.(index);
+              }}
             />
 
             <IconButton
