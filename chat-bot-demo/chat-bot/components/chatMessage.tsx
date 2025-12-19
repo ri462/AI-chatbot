@@ -88,8 +88,10 @@ const SpeakButton = ({
 interface Props {
   chatMessage: IChatMessage;
   index?: number;
-  language: "ja" | "en" | "vi";
+  language?: "ja" | "en" | "vi";
   onReactionChange?: (index: number, reaction: "like" | "dislike" | null) => void;
+  onLike?: (index: number) => void;
+  onDislike?: (index: number) => void;
 }
 
 const ChatMessage = ({
@@ -97,6 +99,8 @@ const ChatMessage = ({
   index = 0,
   language,
   onReactionChange,
+  onLike,
+  onDislike,
 }: Props) => {
   const [reaction, setReaction] = useState<"like" | "dislike" | null>(null);
 
@@ -135,14 +139,20 @@ const ChatMessage = ({
               icon="👍"
               translate="いいね"
               isActive={reaction === "like"}
-              onClick={() => toggleReaction("like")}
+              onClick={() => {
+                toggleReaction("like");
+                if (typeof index === "number") onLike?.(index);
+              }}
             />
 
             <IconButton
               icon="👎"
               translate="よくない"
               isActive={reaction === "dislike"}
-              onClick={() => toggleReaction("dislike")}
+              onClick={() => {
+                toggleReaction("dislike");
+                if (typeof index === "number") onDislike?.(index);
+              }}
             />
 
             <IconButton
@@ -153,7 +163,7 @@ const ChatMessage = ({
 
             <SpeakButton
               text={chatMessage.content}
-              language={language}
+              language={language ?? "ja"}
             />
           </div>
         </>
