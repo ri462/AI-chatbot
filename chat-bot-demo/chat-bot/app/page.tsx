@@ -6,7 +6,7 @@ import { aiResponse } from "./action";
 import type { IChatMessage } from "@/type";
 import ChatMessageArea from "@/components/chatMessageArea";
 
-const TAIL_LIST = ["ワン", "ニャー", "カー", "ウホウホ", "うっきー", "パオーン"];
+const TAIL_LIST = ["😊", "😢", "😍", "🤣", "😂", "👍","😒","😁","👌","✌️","😉","🤦‍♀️","😅","🥺","😎","😆","🫡","🥱","😌","🙂‍↕️","🤭"];
 
 const GREETING_MESSAGES = [
   { greeting: "こんにちは！", message: "何でも聞いてください!!!" },
